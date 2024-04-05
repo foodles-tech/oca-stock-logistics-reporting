@@ -55,7 +55,7 @@
                         name="action_generate_stock_quant_history"
                         class="oe_highlight"
                         states="draft"
-                        string="Geneare"
+                        string="Generate"
                         type="object"
                     />
                     <field name="state" widget="statusbar" />

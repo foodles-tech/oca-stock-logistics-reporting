@@ -7,7 +7,7 @@ from odoo import fields, models
 
 class StockQuantHistory(models.Model):
     _name = "stock.quant.history"
-    _description = "Stock quants picture as it would be for at a given date"
+    _description = "Stock quants history"
     _order = "snapshot_id, inventory_date, product_id, lot_id, location_id"
     snapshot_id = fields.Many2one(
         comodel_name="stock.quant.history.snapshot",
@@ -63,22 +63,6 @@ class StockQuantHistory(models.Model):
         readonly=True,
         check_company=True,
     )
-    # package_id = fields.Many2one(
-    #     'stock.quant.package',
-    #     'Package',
-    #     domain="[('location_id', '=', location_id)]",
-    #     help='The package containing this quant',
-    #     readonly=True,
-    #     ondelete='restrict',
-    #     check_company=True
-    # )
-    # owner_id = fields.Many2one(
-    #     'res.partner',
-    #     'Owner',
-    #     help='This is the owner of the quant',
-    #     readonly=True,
-    #     check_company=True
-    # )
     quantity = fields.Float(
         "Quantity",
         help=(

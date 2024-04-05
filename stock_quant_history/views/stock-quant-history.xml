@@ -10,7 +10,6 @@
         <field name="arch" type="xml">
             <search>
                 <field name="product_id" />
-                <field name="location_id" />
                 <field
                     name="location_id"
                     string="Location and sub-locations of"

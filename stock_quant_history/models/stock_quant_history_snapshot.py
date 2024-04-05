@@ -73,14 +73,6 @@ class StockQuantHistorySnapshot(models.Model):
         for snapshot in self:
             snapshot._generate_stock_quant_history()
 
-    # @property
-    # def _location_usages(self):
-    #     return [
-    #         "internal",
-    #         "transit",
-    #         "production",
-    #     ]
-
     def _prepare_stock_move_line_filter(self, previous_quant_snapshot):
         domain = [
             ("state", "=", "done"),
@@ -109,7 +101,6 @@ class StockQuantHistorySnapshot(models.Model):
             .sudo()
             .create(
                 {
-                    # TODO: figure out what's happen if we get an instance of NewId here ?
                     "snapshot_id": self.id,
                     "product_id": product.id,
                     "lot_id": lot.id,
@@ -139,14 +130,11 @@ class StockQuantHistorySnapshot(models.Model):
             .sudo()
             .search(
                 self._prepare_stock_move_line_filter(previous_quant_snapshot),
-                # order="date"
             )
         ):
-            # if move_line.location_id.usage in self._location_usages:
             quant_history[
                 (move_line.product_id, move_line.lot_id, move_line.location_id)
             ].quantity -= move_line.qty_done
-            # if move_line.location_dest_id.usage in self._location_usages:
             quant_history[
                 (move_line.product_id, move_line.lot_id, move_line.location_dest_id)
             ].quantity += move_line.qty_done
@@ -159,7 +147,6 @@ class StockQuantHistorySnapshot(models.Model):
         self.state = "generated"
 
     def action_related_stock_quant_history_tree_view(self):
-        # action = self.env.ref("stock_quant_history.action_stock_quant_history")
         action = self.env["ir.actions.actions"]._for_xml_id(
             "stock_quant_history.action_stock_quant_history"
         )
