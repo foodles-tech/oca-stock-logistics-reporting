@@ -111,10 +111,14 @@ class StockQuantHistorySnapshot(models.Model):
                 }
             )
         )
-
         self.previous_snapshot_id = previous_quant_snapshot
+
+        _logger.info("Processing %s from %s", self.name, self.previous_snapshot_id.name)
         if previous_quant_snapshot.stock_quant_history_ids.exists():
-            _logger.info("Duplicate previous stock.quant.history...")
+            _logger.info(
+                "Duplicate %s previous stock.quant.history...",
+                len(previous_quant_snapshot.stock_quant_history_ids),
+            )
             for stock_quant_history in previous_quant_snapshot.stock_quant_history_ids:
                 # copy is around 3x slower than create !
                 quant_copy = quant_history[
@@ -126,14 +130,17 @@ class StockQuantHistorySnapshot(models.Model):
                 ]
                 quant_copy.quantity = stock_quant_history.quantity
 
-        _logger.info("Apply stock.move.line since previous snapshot")
-        for move_line in (
+        stock_move_lines = (
             self.env["stock.move.line"]
             .sudo()
             .search(
                 self._prepare_stock_move_line_filter(previous_quant_snapshot),
             )
-        ):
+        )
+        _logger.info(
+            "Apply %s stock.move.line since previous snapshot", len(stock_move_lines)
+        )
+        for move_line in stock_move_lines:
             quant_history[
                 (move_line.product_id, move_line.lot_id, move_line.location_id)
             ].quantity -= move_line.qty_done
