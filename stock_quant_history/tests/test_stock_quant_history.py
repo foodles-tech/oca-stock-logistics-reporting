@@ -11,6 +11,12 @@ class TestStockQuantHistory(SavepointCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.env = cls.env(
+            context=dict(
+                cls.env.context,
+                test_queue_job_no_delay=True,  # no jobs thanks
+            )
+        )
 
         cls.stock_history_now = cls.env["stock.quant.history.snapshot"].create(
             {
