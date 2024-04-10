@@ -71,9 +71,3 @@ class StockQuantHistory(models.Model):
         ),
         readonly=True,
     )
-
-    def copy_multi(self, values: dict):
-        copy_recordset = self.browse()
-        for rec in self:
-            copy_recordset |= rec.copy(values)
-        return copy_recordset

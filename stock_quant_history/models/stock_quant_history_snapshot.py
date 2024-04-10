@@ -1,11 +1,13 @@
 # Copyright 2023-2024 Foodles (https://www.foodles.co/).
 # @author Pierre Verkest <pierreverkest84@gmail.com>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
-
+import logging
 from collections import defaultdict
 
 from odoo import _, api, fields, models
 from odoo.osv.expression import AND
+
+_logger = logging.getLogger(__name__)
 
 
 class DefaultDict(defaultdict):
@@ -112,19 +114,19 @@ class StockQuantHistorySnapshot(models.Model):
 
         self.previous_snapshot_id = previous_quant_snapshot
         if previous_quant_snapshot.stock_quant_history_ids.exists():
-            current_snapshot_quants = (
-                previous_quant_snapshot.stock_quant_history_ids.sudo().copy_multi(
-                    {"snapshot_id": self.id}
-                )
-            )
-            for current_quant_history in current_snapshot_quants:
-                quant_history[
+            _logger.info("Duplicate previous stock.quant.history...")
+            for stock_quant_history in previous_quant_snapshot.stock_quant_history_ids:
+                # copy is around 3x slower than create !
+                quant_copy = quant_history[
                     (
-                        current_quant_history.product_id,
-                        current_quant_history.lot_id,
-                        current_quant_history.location_id,
+                        stock_quant_history.product_id,
+                        stock_quant_history.lot_id,
+                        stock_quant_history.location_id,
                     )
-                ] = current_quant_history
+                ]
+                quant_copy.quantity = stock_quant_history.quantity
+
+        _logger.info("Apply stock.move.line since previous snapshot")
         for move_line in (
             self.env["stock.move.line"]
             .sudo()
@@ -140,10 +142,13 @@ class StockQuantHistorySnapshot(models.Model):
             ].quantity += move_line.qty_done
 
         # remove line with zero to save same disk space
-        for quant in quant_history.values():
-            if quant.quantity == 0:
-                quant.unlink()
-
+        # avoid loop with direct SQL query
+        _logger.info("Remove useless stock_quant_history with quantity == 0")
+        self.env["stock.quant.history"].flush()
+        self.env.cr.execute(
+            "DELETE FROM stock_quant_history where quantity = 0 and snapshot_id = %s",
+            (self.id,),
+        )
         self.state = "generated"
 
     def action_related_stock_quant_history_tree_view(self):
