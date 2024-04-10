@@ -1,0 +1,2 @@
+freezegun
+odoo14-addon-stock-quant-history @ git+https://github.com/OCA/stock-logistics-reporting@refs/pull/306/head#subdirectory=setup/stock_quant_history
