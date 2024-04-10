@@ -7,7 +7,7 @@ from odoo import fields, models
 class StockQuantHistorySnapshot(models.Model):
     _inherit = "stock.quant.history.snapshot"
     state = fields.Selection(
-        selection_add=[("queued", "In progress")],
+        selection_add=[("queued", "In progress"), ("generated",)],
         ondelete={"queued": "set default"},
     )
 
