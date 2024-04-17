@@ -66,12 +66,13 @@ class TestStockQuantHistory(SavepointCase):
             }
         )
 
-    def _update_product_stock(self, qty, lot=None, location=None):
+    def _update_product_stock(self, qty, lot=None, location=None, uom=None):
         if lot is None:
             lot = self.lot
         if not location:
             location = self.location
-
+        if not uom:
+            uom = self.product.uom_id
         inventory = self.env["stock.inventory"].create(
             {
                 "name": "Test Inventory",
@@ -85,7 +86,7 @@ class TestStockQuantHistory(SavepointCase):
                             "product_qty": qty,
                             "location_id": location.id,
                             "product_id": self.product.id,
-                            "product_uom_id": self.product.uom_id.id,
+                            "product_uom_id": uom.id,
                             "prod_lot_id": lot.id,
                         },
                     )
@@ -399,3 +400,21 @@ class TestStockQuantHistory(SavepointCase):
         )
         snapshot_10.action_generate_stock_quant_history()
         self.assertFalse(snapshot_10.stock_quant_history_ids)
+
+    def test_different_uom(self):
+
+        with freeze_time("2023-01-01 10:00:00"):
+            self._update_product_stock(10, uom=self.env.ref("uom.product_uom_dozen"))
+
+        snapshot_10 = self.env["stock.quant.history.snapshot"].create(
+            {
+                "inventory_date": fields.Datetime.from_string("2023-01-01 10:00:00"),
+            }
+        )
+        snapshot_10.action_generate_stock_quant_history()
+        quant_history_10 = snapshot_10.stock_quant_history_ids.filtered(
+            lambda quant_history, pdt=self.product, loc=self.location: quant_history.product_id
+            == pdt
+            and quant_history.location_id == loc
+        )
+        self.assertEqual(quant_history_10.quantity, 120)
