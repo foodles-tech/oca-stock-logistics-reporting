@@ -52,7 +52,6 @@ class TestStockQuantHistory(SavepointCase):
                 "tracking": "lot",
             }
         )
-
         cls.lot = cls.env["stock.production.lot"].create(
             {
                 "name": "lot test",
@@ -60,9 +59,15 @@ class TestStockQuantHistory(SavepointCase):
                 "company_id": cls.warehouse.company_id.id,
             }
         )
+        cls.product_consu = cls.env["product.product"].create(
+            {
+                "name": "test",
+                "type": "consu",
+            }
+        )
 
     def _update_product_stock(self, qty, lot=None, location=None):
-        if not lot:
+        if lot is None:
             lot = self.lot
         if not location:
             location = self.location
@@ -357,3 +362,40 @@ class TestStockQuantHistory(SavepointCase):
             ],
             [("snapshot_id", "in", self.stock_history_now.ids)],
         )
+
+    def test_consu_product_are_ignored(self):
+
+        self.stock_history_now.unlink()
+
+        with freeze_time("2023-01-01 09:00:00"):
+
+            # Create stock picking with consumable
+            picking = self.env["stock.picking"].create(
+                {
+                    "location_id": self.env.ref("stock.stock_location_customers").id,
+                    "location_dest_id": self.location.id,
+                    "picking_type_id": self.env.ref("stock.picking_type_in").id,
+                }
+            )
+            self.env["stock.move"].create(
+                {
+                    "name": self.product_consu.name,
+                    "product_id": self.product_consu.id,
+                    "product_uom_qty": 50.000,
+                    "product_uom": self.product_consu.uom_id.id,
+                    "picking_id": picking.id,
+                    "location_id": self.env.ref("stock.stock_location_customers").id,
+                    "location_dest_id": self.location.id,
+                }
+            )
+            picking.action_confirm()
+            picking.move_ids_without_package.quantity_done = 50.000
+            picking.button_validate()
+
+        snapshot_10 = self.env["stock.quant.history.snapshot"].create(
+            {
+                "inventory_date": fields.Datetime.from_string("2023-01-01 10:00:00"),
+            }
+        )
+        snapshot_10.action_generate_stock_quant_history()
+        self.assertFalse(snapshot_10.stock_quant_history_ids)
