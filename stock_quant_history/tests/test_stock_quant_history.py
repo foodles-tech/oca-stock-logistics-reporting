@@ -23,7 +23,6 @@ class TestStockQuantHistory(SavepointCase):
                 "inventory_date": fields.Datetime.now(),
             }
         )
-        cls.stock_history_now.action_generate_stock_quant_history()
 
         cls.stock_manager_user = cls.env["res.users"].create(
             {
@@ -147,6 +146,7 @@ class TestStockQuantHistory(SavepointCase):
         )
 
     def test_compare_quant(self):
+        self.stock_history_now.action_generate_stock_quant_history()
         self.assertQuantCompare(
             self.stock_history_now.stock_quant_history_ids,
             self.env["stock.quant"].search(
@@ -167,6 +167,7 @@ class TestStockQuantHistory(SavepointCase):
     @users("stock_manager")
     def test_unlink_snapshot_unlink_related_stock_quant_history_records(self):
         # browse with current user
+        self.stock_history_now.action_generate_stock_quant_history()
         stock_history_now = self.env["stock.quant.history.snapshot"].browse(
             self.stock_history_now.id
         )
@@ -185,6 +186,7 @@ class TestStockQuantHistory(SavepointCase):
     @users("stock_manager")
     def test_unlink_stock_quant_history_is_forbidden(self):
         # browse with current user
+        self.stock_history_now.action_generate_stock_quant_history()
         stock_history_now = self.env["stock.quant.history.snapshot"].browse(
             self.stock_history_now.id
         )
@@ -223,8 +225,44 @@ class TestStockQuantHistory(SavepointCase):
         self.assertEqual(stock_history_1970.state, "generated")
         self.assertEqual(len(stock_history_1970.stock_quant_history_ids), 0)
 
+    def test_round_decimal_using_uom_precision(self):
+
+        with freeze_time("2023-01-01 10:00:00"):
+            self._update_product_stock(10.001)
+
+        with freeze_time("2023-01-01 20:00:00"):
+            self._update_product_stock(20.002)
+
+        snapshot_10 = self.env["stock.quant.history.snapshot"].create(
+            {
+                "inventory_date": fields.Datetime.from_string("2023-01-01 10:00:00"),
+            }
+        )
+        snapshot_10.action_generate_stock_quant_history()
+        quant_history_10 = snapshot_10.stock_quant_history_ids.filtered(
+            lambda quant_history, pdt=self.product, loc=self.location: quant_history.product_id
+            == pdt
+            and quant_history.location_id == loc
+        )
+        # force wrong rounding for testing purpose adding float in python can be tricky
+        # >>> 0.1 + 0.1 + 0.1
+        # 0.30000000000000004
+
+        quant_history_10.quantity = 10.001
+        snapshot_20 = self.env["stock.quant.history.snapshot"].create(
+            {
+                "inventory_date": fields.Datetime.from_string("2023-01-01 20:00:00"),
+            }
+        )
+        snapshot_20.action_generate_stock_quant_history()
+        quant_history_20 = snapshot_20.stock_quant_history_ids.filtered(
+            lambda quant_history, pdt=self.product, loc=self.location: quant_history.product_id
+            == pdt
+            and quant_history.location_id == loc
+        )
+        self.assertEqual(quant_history_20.quantity, 20)
+
     def test_next_quant_history_generation(self):
-        self.stock_history_now.unlink()
 
         with freeze_time("2023-01-01 10:00:00"):
             self._update_product_stock(10)
@@ -365,8 +403,6 @@ class TestStockQuantHistory(SavepointCase):
         )
 
     def test_consu_product_are_ignored(self):
-
-        self.stock_history_now.unlink()
 
         with freeze_time("2023-01-01 09:00:00"):
 

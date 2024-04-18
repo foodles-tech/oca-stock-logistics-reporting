@@ -4,7 +4,7 @@
 import logging
 from collections import defaultdict
 
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, tools
 from odoo.osv.expression import AND
 
 _logger = logging.getLogger(__name__)
@@ -156,14 +156,31 @@ class StockQuantHistorySnapshot(models.Model):
             if move_line.location_id.usage not in ignored_location_usage:
                 quant_history[
                     (move_line.product_id, move_line.lot_id, move_line.location_id)
-                ].quantity -= move_line.product_uom_id._compute_quantity(
-                    move_line.qty_done, move_line.product_id.uom_id
+                ].quantity = tools.float_round(
+                    quant_history[
+                        (move_line.product_id, move_line.lot_id, move_line.location_id)
+                    ].quantity
+                    - move_line.product_uom_id._compute_quantity(
+                        move_line.qty_done, move_line.product_id.uom_id
+                    ),
+                    precision_rounding=move_line.product_id.uom_id.rounding,
                 )
+
             if move_line.location_dest_id.usage not in ignored_location_usage:
                 quant_history[
                     (move_line.product_id, move_line.lot_id, move_line.location_dest_id)
-                ].quantity += move_line.product_uom_id._compute_quantity(
-                    move_line.qty_done, move_line.product_id.uom_id
+                ].quantity = tools.float_round(
+                    quant_history[
+                        (
+                            move_line.product_id,
+                            move_line.lot_id,
+                            move_line.location_dest_id,
+                        )
+                    ].quantity
+                    + move_line.product_uom_id._compute_quantity(
+                        move_line.qty_done, move_line.product_id.uom_id
+                    ),
+                    precision_rounding=move_line.product_id.uom_id.rounding,
                 )
 
         # remove line with zero to save same disk space
