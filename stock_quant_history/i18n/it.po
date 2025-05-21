@@ -271,3 +271,9 @@ msgstr ""
 #: model:ir.model,name:stock_quant_history.model_stock_quant_history_snapshot
 msgid "stock.quant.history generation configuration model"
 msgstr ""
+
+#. module: stock_quant_history
+#: code:addons/stock_quant_history/models/stock_picking.py:0
+#, python-format
+msgid "You cannot unlock '%s' as stock histories exists:%s%s."
+msgstr ""

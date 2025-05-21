@@ -279,3 +279,9 @@ msgid "stock.quant.history generation configuration model"
 msgstr ""
 "Cliché de stock: Modèle de configuration pour la génération des ligne de "
 "stock.quant.history"
+
+#. module: stock_quant_history
+#: code:addons/stock_quant_history/models/stock_picking.py:0
+#, python-format
+msgid "You cannot unlock '%s' as stock histories exists:%s%s."
+msgstr "Vous ne pouvez pas déverrouiller '%s' car il existe un ou plusieurs historiques de stock associés:%s%s."
