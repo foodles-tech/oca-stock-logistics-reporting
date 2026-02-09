@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Copyright 2025 Foodles (https://www.foodles.co/).
+    License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+-->
+<odoo>
+    <template id="report_picking" inherit_id="stock.report_picking">
+        <xpath expr="//tr[@t-foreach][@t-as='ml']" position="attributes">
+            <attribute
+                name="t-foreach"
+            >o.move_line_ids_without_package.sorted(lambda ml: ml.location_id.id)</attribute>
+        </xpath>
+    </template>
+</odoo>
